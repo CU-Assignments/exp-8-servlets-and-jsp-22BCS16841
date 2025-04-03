@@ -1,0 +1,87 @@
+//JSP Form (attendance.jsp)
+<form action="AttendanceServlet" method="post">
+    <label>Student Name:</label>
+    <input type="text" name="student_name" required><br>
+
+    <label>Date:</label>
+    <input type="date" name="date" required><br>
+
+    <label>Status:</label>
+    <select name="status">
+        <option value="Present">Present</option>
+        <option value="Absent">Absent</option>
+    </select><br>
+
+    <input type="submit" value="Submit Attendance">
+</form>
+<a href="viewAttendance.jsp">View Attendance Records</a>
+
+//Servlet to Save Attendance (AttendanceServlet.java)
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/AttendanceServlet")
+public class AttendanceServlet extends HttpServlet {
+    private static final String JDBC_URL = "jdbc:mysql://localhost:3306/student_portal";
+    private static final String JDBC_USER = "root";  // Change as per your DB
+    private static final String JDBC_PASS = "password"; // Change as per your DB
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String studentName = request.getParameter("student_name");
+        String date = request.getParameter("date");
+        String status = request.getParameter("status");
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection con = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASS);
+
+            PreparedStatement stmt = con.prepareStatement("INSERT INTO attendance (student_name, date, status) VALUES (?, ?, ?)");
+            stmt.setString(1, studentName);
+            stmt.setString(2, date);
+            stmt.setString(3, status);
+
+            stmt.executeUpdate();
+            con.close();
+
+            response.sendRedirect("viewAttendance.jsp");
+        } catch (Exception e) {
+            response.getWriter().println("Error: " + e.getMessage());
+        }
+    }
+}
+
+//JSP Page to View Attendance (viewAttendance.jsp)
+<%@ page import="java.sql.*" %>
+<h2>Student Attendance Records</h2>
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Student Name</th>
+        <th>Date</th>
+        <th>Status</th>
+    </tr>
+    <%
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/student_portal", "root", "password");
+            Statement stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM attendance");
+
+            while (rs.next()) {
+                out.println("<tr><td>" + rs.getInt("id") + "</td><td>" + rs.getString("student_name") +
+                            "</td><td>" + rs.getString("date") + "</td><td>" + rs.getString("status") + "</td></tr>");
+            }
+            con.close();
+        } catch (Exception e) {
+            out.println("<h3>Error: " + e.getMessage() + "</h3>");
+        }
+    %>
+</table>
+<a href="attendance.jsp">Go Back</a>
