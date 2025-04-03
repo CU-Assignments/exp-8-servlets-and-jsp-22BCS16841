@@ -1,0 +1,65 @@
+//EmployeeServlet.java (Servlet Code)
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/EmployeeServlet")
+public class EmployeeServlet extends HttpServlet {
+    private static final String JDBC_URL = "jdbc:mysql://localhost:3306/company";
+    private static final String JDBC_USER = "root";  // Change as per your DB
+    private static final String JDBC_PASS = "password"; // Change as per your DB
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html");
+        PrintWriter out = response.getWriter();
+        
+        String empId = request.getParameter("id"); // Get Employee ID from form
+        
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection con = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASS);
+            PreparedStatement stmt;
+            
+            if (empId != null && !empId.isEmpty()) {
+                // Search by Employee ID
+                stmt = con.prepareStatement("SELECT * FROM employees WHERE id = ?");
+                stmt.setInt(1, Integer.parseInt(empId));
+            } else {
+                // Fetch all employees
+                stmt = con.prepareStatement("SELECT * FROM employees");
+            }
+
+            ResultSet rs = stmt.executeQuery();
+            out.println("<h2>Employee List</h2>");
+            out.println("<table border='1'><tr><th>ID</th><th>Name</th><th>Department</th><th>Salary</th></tr>");
+
+            while (rs.next()) {
+                out.println("<tr><td>" + rs.getInt("id") + "</td><td>" + rs.getString("name") + 
+                            "</td><td>" + rs.getString("department") + "</td><td>" + rs.getDouble("salary") + "</td></tr>");
+            }
+            out.println("</table>");
+            
+            con.close();
+        } catch (Exception e) {
+            out.println("<h3>Error: " + e.getMessage() + "</h3>");
+        }
+        out.close();
+    }
+}
+
+//Employee Search Form (index.html)
+<form action="EmployeeServlet" method="get">
+    <label>Search Employee by ID:</label>
+    <input type="text" name="id">
+    <input type="submit" value="Search">
+</form>
+
